@@ -81,10 +81,13 @@ def get_prices(price_type: str):
 
 # Функция для отправки главного меню
 async def start(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text(
-        "Выберите раздел:",
-        reply_markup=ReplyKeyboardMarkup(MAIN_MENU, one_time_keyboard=True, resize_keyboard=True)
-    )
+    # Отправляем картинку 12.png
+    with open("12.png", "rb") as photo:
+        await update.message.reply_photo(
+            photo=photo,
+            caption="Выберите интересующий раздел:",
+            reply_markup=ReplyKeyboardMarkup(MAIN_MENU, one_time_keyboard=True, resize_keyboard=True)
+        )
 
 # Обработка нажатий на кнопки
 async def handle_message(update: Update, context: CallbackContext) -> None:
