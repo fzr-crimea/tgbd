@@ -7,16 +7,13 @@ import os
 DATABASE_PATH = "bot_database.db"
 
 # Главное меню
-MAIN_MENU = [["Продукция", "Прайс лист"], ["Редактировать данные"]]
+MAIN_MENU = [["Продукция", "Прайс лист"]]
 
 # Меню продукции
-PRODUCT_MENU = [["Рыба", "Мясо"], ["Назад в будущее"]]
+PRODUCT_MENU = [["Рыба", "Мясо"], ["Назад"]]
 
 # Меню прайс-листа
-PRICE_MENU = [["Старый прайс-лист", "Акционные цены", "Актуальный прайс"], ["В главное меню - ВЕРНУТЬСЯ"]]
-
-# Меню редактирования
-EDIT_MENU = [["Изменить продукт", "Изменить прайс-лист"], ["Назад"]]
+PRICE_MENU = [["Старый прайс-лист", "Акционные цены", "Актуальный прайс"], ["Назад"]]
 
 # Создаем базу данных и таблицы, если они не существуют
 def create_database():
@@ -82,38 +79,6 @@ def get_prices(price_type: str):
     conn.close()
     return [price[0] for price in prices]
 
-# Функция для обновления названия продукта
-def update_product_name(old_name: str, new_name: str):
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE products SET name = ? WHERE name = ?", (new_name, old_name))
-    conn.commit()
-    conn.close()
-
-# Функция для обновления категории продукта
-def update_product_category(name: str, new_category: str):
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE products SET category = ? WHERE name = ?", (new_category, name))
-    conn.commit()
-    conn.close()
-
-# Функция для обновления названия прайс-листа
-def update_price_name(old_name: str, new_name: str):
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE prices SET name = ? WHERE name = ?", (new_name, old_name))
-    conn.commit()
-    conn.close()
-
-# Функция для обновления типа прайс-листа
-def update_price_type(name: str, new_type: str):
-    conn = sqlite3.connect(DATABASE_PATH)
-    cursor = conn.cursor()
-    cursor.execute("UPDATE prices SET price_type = ? WHERE name = ?", (new_type, name))
-    conn.commit()
-    conn.close()
-
 # Функция для отправки главного меню
 async def start(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(
@@ -135,11 +100,6 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
             "Выберите тип прайс-листа:",
             reply_markup=ReplyKeyboardMarkup(PRICE_MENU, one_time_keyboard=True, resize_keyboard=True)
         )
-    elif text == "Редактировать данные":
-        await update.message.reply_text(
-            "Выберите действие:",
-            reply_markup=ReplyKeyboardMarkup(EDIT_MENU, one_time_keyboard=True, resize_keyboard=True)
-        )
     elif text == "Назад":
         await update.message.reply_text(
             "Главное меню:",
@@ -151,44 +111,25 @@ async def handle_message(update: Update, context: CallbackContext) -> None:
             f"Продукция ({text}):\n" + "\n".join(products),
             reply_markup=ReplyKeyboardMarkup(PRODUCT_MENU, one_time_keyboard=True, resize_keyboard=True)
         )
-    elif text in ["Старый прайс-лист", "Акционные цены", "Актуальный прайс"]:
+    elif text == "Старый прайс-лист":
+        # Отправляем файл old.txt
+        with open("old.txt", "rb") as file:
+            await update.message.reply_document(
+                document=file,
+                caption="Старый прайс-лист",
+                reply_markup=ReplyKeyboardMarkup([["Назад"]], one_time_keyboard=True, resize_keyboard=True)
+            )
+    elif text in ["Акционные цены", "Актуальный прайс"]:
         prices = get_prices(text)
         await update.message.reply_text(
             f"Прайс-лист ({text}):\n" + "\n".join(prices),
             reply_markup=ReplyKeyboardMarkup(PRICE_MENU, one_time_keyboard=True, resize_keyboard=True)
         )
-    elif text == "Изменить продукт":
-        await update.message.reply_text(
-            "Введите старое название продукта и новое название через запятую (например, Лосось, Сёмга):"
-        )
-        context.user_data["action"] = "update_product_name"
-    elif text == "Изменить прайс-лист":
-        await update.message.reply_text(
-            "Введите старое название прайс-листа и новое название через запятую (например, Прайс-лист 2022, Прайс-лист 2021):"
-        )
-        context.user_data["action"] = "update_price_name"
     else:
-        if "action" in context.user_data:
-            if context.user_data["action"] == "update_product_name":
-                try:
-                    old_name, new_name = text.split(", ")
-                    update_product_name(old_name, new_name)
-                    await update.message.reply_text(f"Название продукта изменено: {old_name} -> {new_name}")
-                except Exception as e:
-                    await update.message.reply_text(f"Ошибка: {e}")
-            elif context.user_data["action"] == "update_price_name":
-                try:
-                    old_name, new_name = text.split(", ")
-                    update_price_name(old_name, new_name)
-                    await update.message.reply_text(f"Название прайс-листа изменено: {old_name} -> {new_name}")
-                except Exception as e:
-                    await update.message.reply_text(f"Ошибка: {e}")
-            context.user_data.clear()
-        else:
-            await update.message.reply_text(
-                "Пожалуйста, используйте кнопки для навигации.",
-                reply_markup=ReplyKeyboardMarkup(MAIN_MENU, one_time_keyboard=True, resize_keyboard=True)
-            )
+        await update.message.reply_text(
+            "Пожалуйста, используйте кнопки для навигации.",
+            reply_markup=ReplyKeyboardMarkup(MAIN_MENU, one_time_keyboard=True, resize_keyboard=True)
+        )
 
 # Запуск бота
 def main() -> None:
